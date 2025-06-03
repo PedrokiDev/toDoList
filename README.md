@@ -10,6 +10,12 @@ Este é um aplicativo de lista de tarefas desenvolvido em Flutter como parte de 
 * **Exclusão de Tarefas:** Remover tarefas da lista com diálogo de confirmação.
 * **Persistência de Dados:** Todas as tarefas e seus status são salvos localmente em um banco de dados SQLite, garantindo que os dados não se percam ao fechar o aplicativo.
 
+
+* **Fase 2: Arquitetura com Provider (Concluída)**
+  * **Gerenciamento de Estado Profissional:** Refatoração completa da lógica de estado utilizando o pacote `provider`.
+  * **Separação de Responsabilidades:** A lógica de negócio (gerenciamento de tarefas, interação com o banco de dados) foi movida para uma classe `TasksProvider`, desacoplando-a da interface do usuário.
+  * **Código Mais Limpo e Escalável:** Adoção de uma arquitetura que torna o código mais organizado, fácil de testar e pronto para futuras expansões.
+
 ## 📸 GIF
 
 (![Image](https://github.com/user-attachments/assets/eb98cdec-3582-467d-aaef-2baa83aa2c3c))
@@ -22,6 +28,7 @@ Este é um aplicativo de lista de tarefas desenvolvido em Flutter como parte de 
 * **`path_provider`:** Para encontrar o caminho correto no sistema de arquivos para armazenar o banco de dados.
 * **`path`:** Utilitário para manipulação de caminhos de arquivos.
 * **Material Design 3:** Para os componentes visuais e tema do aplicativo.
+* **Provider:** Para gerenciamento de estado centralizado e injeção de dependência, seguindo as melhores práticas recomendadas pela comunidade Flutter.
 
 ## 🚀 Jornada de Desenvolvimento e Aprendizados
 
@@ -40,13 +47,19 @@ Este projeto foi desenvolvido com foco em solidificar conceitos fundamentais do 
     * Resolução de `RangeError` durante a exclusão de itens, otimizando o fluxo de atualização da UI e manipulação da lista.
 * **Construção de UI com Flutter:** Utilização de `ListView.builder`, `ListTile`, `Checkbox`, `IconButton`, `FloatingActionButton`, `AlertDialog` e `TextField`.
 * **Boas Práticas:** Organização do código com uma classe `DatabaseHelper` separada, uso de `async/await` para operações assíncronas.
+* **Gerenciamento de Estado Avançado com Provider:**
+  * Implementação do padrão `ChangeNotifier` e uso do widget `ChangeNotifierProvider` para disponibilizar o estado das tarefas de forma eficiente para a árvore de widgets.
+  * Utilização de `context.watch<TasksProvider>()` para "ouvir" as mudanças de estado na UI e disparar reconstruções automáticas.
+  * Utilização de `context.read<TasksProvider>()` para chamar métodos e lógicas do provider a partir de callbacks de eventos (como cliques em botões), sem causar reconstruções desnecessárias do widget que disparou a ação.
+  * Prática da separação clara entre a lógica de negócio (agora no `TasksProvider`) e a camada de apresentação (os widgets), resultando em um código significativamente mais organizado e desacoplado.
+* **Criação de Modelos de Dados:** Implementação da classe `Task` para representar os dados de forma tipada e organizada, melhorando a clareza e a segurança do código em comparação com o uso direto de `Map<String, dynamic>`.
 
 ## 📈 Roadmap de Evolução (Próximas Fases Planejadas)
 
 Este projeto é a base para futuras melhorias e aprendizados:
 
 * **Fase 1: Fundação de Dados com SQL (✅ Concluída)**
-* **Fase 2: MVP Profissional (Provider e Arquitetura):** Implementar o Provider para um gerenciamento de estado mais robusto e desacoplado da UI.
+* **Fase 2: MVP Profissional (Provider e Arquitetura) (✅ Concluída)**
 * **Fase 3: Melhorias de UI/UX:** Adicionar busca de tarefas, abas para "Pendentes" e "Concluídas", datas de conclusão com indicadores visuais de prazo e modo escuro.
 * **Fase 4: Testes Automatizados:** Escrever testes de unidade e de widget.
 * **Fase 5: Sincronização com a Nuvem (API):** Conectar o app a uma API (como JSONPlaceholder para simulação) para buscar e enviar tarefas, permitindo uma experiência "offline-first".

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'task_model.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -36,41 +37,39 @@ class DatabaseHelper {
     print("Banco de dados e tabela 'tasks' criados!");
   }
 
-  Future<int> insertTask(Map<String, dynamic> taskData) async {
+  Future<int> insertTask(Task task) async {
     final db = await database;
 
     return await db.insert(
       'tasks',
-      taskData,
+      task.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 
-  Future<List<Map<String, dynamic>>> getTasks() async {
+  Future<List<Task>> getTasks() async {
     final db = await database;
 
     final List<Map<String, dynamic>> maps = await db.query('tasks');
 
-    return maps;
+    return List.generate(maps.length, (i) {
+      return Task.fromMap(maps[i]);
+    });
   }
 
-  Future<int> updateTask(Map<String, dynamic> taskData) async {
+  Future<int> updateTask(Task task) async {
     final db = await database;
 
     return await db.update(
       'tasks',
-      taskData,
+      task.toMap(),
       where: 'id = ?',
-      whereArgs: [taskData['id']],
+      whereArgs: [task.id],
     );
   }
 
   Future<int> deleteTask(int id) async {
     final db = await database;
-    return await db.delete(
-      'tasks',
-      where:'id = ?',
-      whereArgs: [id],
-    );
+    return await db.delete('tasks', where: 'id = ?', whereArgs: [id]);
   }
 }

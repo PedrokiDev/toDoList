@@ -1,39 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_list/database_helper.dart';
+import 'package:provider/provider.dart';
+import 'package:to_do_list/task_model.dart';
+import 'package:to_do_list/tasks_provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) {
+        final provider = TasksProvider();
+        provider.loadTasks();
+        return provider;
+      },
+      child: const MyApp(),
+    ),
+  );
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  final List<Map<String, dynamic>> _tasks = [];
-
-  void _refreshTasks() async {
-    final dataFromDb = await DatabaseHelper().getTasks();
-    setState(() {
-      _tasks.clear();
-
-      for (var taskFromDb in dataFromDb) {
-        _tasks.add(Map<String, dynamic>.from(taskFromDb));
-      }
-      print("Refresh: _tasks agora tem ${_tasks.length} itens e são: $_tasks");
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _refreshTasks();
-  }
-
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -42,62 +27,55 @@ class _MyAppState extends State<MyApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
+      home: const TasksScreen(),
+    );
+  }
+}
 
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('To do List'),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        ),
-        body: ListView.builder(
-          itemCount: _tasks.length,
-          itemBuilder: (context, index) {
-            final Map<String, dynamic> currentTask = _tasks[index];
+class TasksScreen extends StatelessWidget {
+  const TasksScreen({super.key});
 
-            print(
-              "Construindo ListTile para: ${currentTask['text']}, isDone (int) ${currentTask['isDone']}",
-            );
+  @override
+  Widget build(BuildContext context) {
+    final tasksProvider = context.watch<TasksProvider>();
+    final List<Task> tasks = tasksProvider.tasks;
 
-            return ListTile(
-              leading: Checkbox(
-                value: currentTask['isDone'] == 1,
-                onChanged: (bool? newValue) async {
-                  if (newValue != null) {
-                    final int taskId = currentTask['id'];
-                    final String taskText = currentTask['text'];
-                    int newIsDoneValue = newValue ? 1 : 0;
+    print("Construindo TasksScreen: ${tasks.length} tarefas do provider");
 
-                    setState(() {
-                      final taskInList = _tasks.firstWhere((task) => task['id'] == taskId);
-                      taskInList['isDone'] = newIsDoneValue;
-                      print(
-                        "Dentro do setState (UI): _tasks[$index]['isDone'] agora é: $newIsDoneValue",
-                      );
-                    });
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('To do List'),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+      ),
+      body: ListView.builder(
+        itemCount: tasks.length,
+        itemBuilder: (context, index) {
+          final Task currentTask = tasks[index];
 
-                    Map<String, dynamic> taskForDbUpdate = {
-                      'id': taskId,
-                      'text': taskText,
-                      'isDone': newIsDoneValue,
-                    };
-
-                    await DatabaseHelper().updateTask(taskForDbUpdate);
-                    print(
-                      "Tarefa '$taskText' (ID: $taskId) ATUALIZADA no banco. Novo isDone: $newIsDoneValue",
-                    );
-                  }
-                },
-              ),
-              title: Text(currentTask['text']),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () {
+          return ListTile(
+            leading: Checkbox(
+              value: currentTask.isDone,
+              onChanged: (bool? newValue) {
+                if (newValue != null && currentTask.id != null) {
+                  context.read<TasksProvider>().updateTaskStatus(
+                    currentTask.id!,
+                    newValue,
+                  );
+                }
+              },
+            ),
+            title: Text(currentTask.text),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () {
+                if (currentTask.id != null) {
                   showDialog(
                     context: context,
                     builder: (BuildContext dialogContext) {
                       return AlertDialog(
                         title: Text('Confirmar exclusão?'),
                         content: Text(
-                          "Tem certeza que deseja excluir a tarefa '${currentTask['text']}'?",
+                          "Tem certeza que deseja excluir a tarefa '${currentTask.text}'?",
                         ),
                         actions: <Widget>[
                           TextButton(
@@ -108,16 +86,80 @@ class _MyAppState extends State<MyApp> {
                           ),
                           TextButton(
                             child: Text('Excluir'),
-                            onPressed: () async {
-                              final int taskIdToDelete = currentTask['id'];
+                            onPressed: () {
+                              Navigator.of(dialogContext).pop();
+                              context.read<TasksProvider>().deleteTask(
+                                currentTask.id!,
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                }
+              },
+            ),
+          );
+        },
+      ),
+      floatingActionButton: Builder(
+        builder: (BuildContext fabContext) {
+          return FloatingActionButton(
+            onPressed: () {
+              showDialog(
+                context: fabContext,
+                builder: (BuildContext dialogContext) {
+                  final TextEditingController textController =
+                      TextEditingController();
+                  String? currentErrorText;
 
-                              await DatabaseHelper().deleteTask(taskIdToDelete);
-                              print("Tarefa com ID $taskIdToDelete DELETADA do banco");
-
-                              if (mounted) Navigator.of(dialogContext).pop();
-
-                              _refreshTasks();
-                              print("Lista da UI atualizada após deleção.");
+                  return StatefulBuilder(
+                    builder: (
+                      BuildContext sbfContext,
+                      StateSetter setStateDialog,
+                    ) {
+                      return AlertDialog(
+                        title: Text('Adicionar Tarefa'),
+                        content: TextField(
+                          controller: textController,
+                          autofocus: true,
+                          decoration: InputDecoration(
+                            hintText: 'Digite uma tarefa',
+                            errorText: currentErrorText,
+                          ),
+                          onChanged: (text) {
+                            if (currentErrorText != null && text.isNotEmpty) {
+                              setStateDialog(() {
+                                currentErrorText = null;
+                              });
+                            }
+                          },
+                        ),
+                        actions: <Widget>[
+                          TextButton(
+                            child: Text('Cancelar'),
+                            onPressed: () {
+                              Navigator.of(dialogContext).pop();
+                            },
+                          ),
+                          TextButton(
+                            child: Text('Adicionar'),
+                            onPressed: () {
+                              if (textController.text.isNotEmpty) {
+                                setStateDialog(() {
+                                  currentErrorText = null;
+                                });
+                                sbfContext.read<TasksProvider>().addTask(
+                                  textController.text,
+                                );
+                                Navigator.of(dialogContext).pop();
+                              } else {
+                                setStateDialog(() {
+                                  currentErrorText =
+                                      'A tarefa não pode estar vazia.';
+                                });
+                              }
                             },
                           ),
                         ],
@@ -125,62 +167,12 @@ class _MyAppState extends State<MyApp> {
                     },
                   );
                 },
-              ),
-            );
-          },
-        ),
-        floatingActionButton: Builder(
-          builder: (BuildContext newContext) {
-            return FloatingActionButton(
-              onPressed: () {
-                showDialog(
-                  context: newContext,
-                  builder: (BuildContext dialogContext) {
-                    final TextEditingController taskController =
-                        TextEditingController();
-                    return AlertDialog(
-                      title: Text('Adicionar nova tarefa'),
-                      content: TextField(
-                        controller: taskController,
-                        autofocus: true,
-                        decoration: InputDecoration(
-                          hintText: 'Digite a nova tarefa',
-                        ),
-                      ),
-                      actions: <Widget>[
-                        TextButton(
-                          child: Text('Cancelar'),
-                          onPressed: () {
-                            Navigator.of(dialogContext).pop();
-                          },
-                        ),
-                        TextButton(
-                          child: Text('Adicionar'),
-                          onPressed: () async {
-                            if (taskController.text.isNotEmpty) {
-                              final newTaskData = {
-                                'text': taskController.text,
-                                'isDone': 0,
-                              };
-
-                              await DatabaseHelper().insertTask(newTaskData);
-
-                              _refreshTasks();
-                            }
-
-                            if (mounted) Navigator.of(dialogContext).pop();
-                          },
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-              tooltip: 'Adicionar tarefa',
-              child: Icon(Icons.add),
-            );
-          },
-        ),
+              );
+            },
+            tooltip: 'Adicionar tarefa',
+            child: Icon(Icons.add),
+          );
+        },
       ),
     );
   }

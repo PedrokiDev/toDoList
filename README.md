@@ -22,7 +22,7 @@ Este é um aplicativo de lista de tarefas desenvolvido em Flutter como parte de 
 
 ## 📸 GIF
 
-(![Image](https://github.com/user-attachments/assets/eb98cdec-3582-467d-aaef-2baa83aa2c3c))
+<!-- Uploading "Screen_recording_20250611_041829-ezgif.com-resize.gif"... -->
 
 ## 🛠️ Tecnologias Utilizadas
 

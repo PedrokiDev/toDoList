@@ -9,21 +9,38 @@ class TasksProvider extends ChangeNotifier {
 
   List<Task> get tasks => _tasks;
 
+  List<Task> get pendingTasks {
+    final pending = _tasks.where((task) => !task.isDone).toList();
+    print("TasksProvider: Getter pendingTasks chamado, ${pending.length} tarefas pendentes");
+    return pending;
+  }
+
+  List<Task> get recentCompletedTasks {
+    final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+
+    final completedRecently = _tasks.where((task) {
+      if (!task.isDone || task.completionDate == null) {
+        return false;
+      }
+      return task.completionDate!.isAfter(thirtyDaysAgo);
+    }).toList();
+
+      print("TasksProvider: Getter recentCompletedTasks chamado, ${completedRecently.length} tarefas concluídas recentemente.");
+      return completedRecently;
+  }
+
   Future<void> loadTasks() async {
     _tasks = await _dbHelper.getTasks();
-    print("TasksProvider: Tarefas carregadas, total: ${_tasks.length}");
     notifyListeners();
   }
 
   Future<void> addTask(String taskText) async {
     if (taskText.isEmpty) {
-      print("TasksProvider: Tentativa de adicionar tarefa com texto vazio");
       return;
     }
 
     final newTask = Task(text: taskText, isDone: false);
     await _dbHelper.insertTask(newTask);
-    print("TasksProvider: Nova tarefa '$taskText' inserida no banco.");
     await loadTasks();
   }
 
@@ -34,21 +51,24 @@ class TasksProvider extends ChangeNotifier {
       Task taskToUpdate = _tasks[taskIndex];
       taskToUpdate.isDone = newIsDoneStatus;
 
+      if (newIsDoneStatus == true) {
+        taskToUpdate.completionDate = DateTime.now();
+        print("TasksProvider: Tarefa ID $taskId marcada como concluída em ${taskToUpdate.completionDate}");
+      } else {
+        taskToUpdate.completionDate = null;
+        print("TasksProvider: Tarefa ID $taskId marcada como não concluída, completionDate zerada.");
+      }
+
       await _dbHelper.updateTask(taskToUpdate);
-      print(
-        "TaskProvider: Tarefa com ID $taskId atualizada no banco. Novo isDone: $newIsDoneStatus",
-      );
       await loadTasks();
     } else {
-      print(
-        "TaskProvider: Tarefa com ID $taskId não encontrada para atualizar o status.",
-      );
+      print("TasksProvider: Tarefa com ID $taskId não encontrada para atualizar o status");
+      await loadTasks();
     }
   }
 
-  Future<void> deleteTask(int taskId) async {
+  Future<void> deleteTaskById(int taskId) async {
     await _dbHelper.deleteTask(taskId);
-    print("TaskProvider: Tarefa com ID $taskId deletada do banco.");
     await loadTasks();
   }
 }

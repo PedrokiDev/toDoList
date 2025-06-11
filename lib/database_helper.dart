@@ -6,11 +6,8 @@ import 'task_model.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
-
   factory DatabaseHelper() => _instance;
-
   DatabaseHelper._internal();
-
   static Database? _database;
 
   Future<Database> get database async {
@@ -22,8 +19,12 @@ class DatabaseHelper {
   Future<Database> _initDb() async {
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
     String path = p.join(documentsDirectory.path, 'tasks.db');
-
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+    return await openDatabase(
+        path,
+        version: 2,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+    );
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -31,10 +32,18 @@ class DatabaseHelper {
       CREATE TABLE tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         text TEXT NOT NULL,
-        isDone INTEGER NOT NULL DEFAULT 0
+        isDone INTEGER NOT NULL DEFAULT 0,
+        completionDate TEXT NULL
       )
     ''');
-    print("Banco de dados e tabela 'tasks' criados!");
+  }
+  
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute("ALTER TABLE tasks ADD COLUMN completionDate TEXT NULL");
+      print("Tabela 'tasks' atualizada para v$newVersion: coluna completionDate adicionada");
+    }
+    //Caso haja futuras atualizações de schema(versão 3..4..) adicione mais blocos if aqui ou encontre melhor forma de otimizar o código.
   }
 
   Future<int> insertTask(Task task) async {

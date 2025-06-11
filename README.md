@@ -11,10 +11,14 @@ Este é um aplicativo de lista de tarefas desenvolvido em Flutter como parte de 
 * **Persistência de Dados:** Todas as tarefas e seus status são salvos localmente em um banco de dados SQLite, garantindo que os dados não se percam ao fechar o aplicativo.
 
 
-* **Fase 2: Arquitetura com Provider (Concluída)**
+### Fase 2: Arquitetura com Provider (Concluída)
   * **Gerenciamento de Estado Profissional:** Refatoração completa da lógica de estado utilizando o pacote `provider`.
   * **Separação de Responsabilidades:** A lógica de negócio (gerenciamento de tarefas, interação com o banco de dados) foi movida para uma classe `TasksProvider`, desacoplando-a da interface do usuário.
   * **Código Mais Limpo e Escalável:** Adoção de uma arquitetura que torna o código mais organizado, fácil de testar e pronto para futuras expansões.
+
+### Fase 3: Melhorias de UI/UX (Em Andamento)
+* **Interface com Abas:** Criação de uma UI com `TabBar` e `TabBarView` para separar visualmente as tarefas "Pendentes" das "Concluídas", melhorando a organização e a experiência do usuário.
+* **Filtro de Tarefas Concluídas:** A aba "Concluídas" exibe apenas as tarefas finalizadas no último mês, mantendo a interface limpa e focada em atividades recentes.
 
 ## 📸 GIF
 
@@ -53,6 +57,10 @@ Este projeto foi desenvolvido com foco em solidificar conceitos fundamentais do 
   * Utilização de `context.read<TasksProvider>()` para chamar métodos e lógicas do provider a partir de callbacks de eventos (como cliques em botões), sem causar reconstruções desnecessárias do widget que disparou a ação.
   * Prática da separação clara entre a lógica de negócio (agora no `TasksProvider`) e a camada de apresentação (os widgets), resultando em um código significativamente mais organizado e desacoplado.
 * **Criação de Modelos de Dados:** Implementação da classe `Task` para representar os dados de forma tipada e organizada, melhorando a clareza e a segurança do código em comparação com o uso direto de `Map<String, dynamic>`.
+* **Construção de UI com Abas:** Implementação de uma interface navegável utilizando o `DefaultTabController`, `TabBar` (dentro do `AppBar`) e `TabBarView` para criar uma experiência de usuário fluida e organizada.
+* **Filtragem de Dados no Provider:** Criação de `getters` computados no `TasksProvider` (ex: `pendingTasks`, `recentCompletedTasks`) para fornecer listas de dados já filtradas para a UI. Esta técnica mantém a lógica de negócio fora da camada de visualização e otimiza a reatividade da interface.
+* **Refatoração e Composição de Widgets:** Extração da lógica da lista de tarefas para um widget reutilizável (`TasksListView`), promovendo um código mais limpo, evitando duplicação e seguindo o princípio de composição do Flutter.
+* **Migração de Banco de Dados (`sqflite`):** Atualização do schema do banco de dados `SQLite` em uma base já existente para adicionar novas colunas (`completionDate`). Isso foi feito de forma segura incrementando a `version` do banco e utilizando o callback `onUpgrade` para aplicar as alterações com `ALTER TABLE`.
 
 ## 📈 Roadmap de Evolução (Próximas Fases Planejadas)
 
@@ -60,7 +68,7 @@ Este projeto é a base para futuras melhorias e aprendizados:
 
 * **Fase 1: Fundação de Dados com SQL (✅ Concluída)**
 * **Fase 2: MVP Profissional (Provider e Arquitetura) (✅ Concluída)**
-* **Fase 3: Melhorias de UI/UX:** Adicionar busca de tarefas, abas para "Pendentes" e "Concluídas", datas de conclusão com indicadores visuais de prazo e modo escuro.
+* **Fase 3: Melhorias de UI/UX:** Adicionar busca de tarefas, abas para "Pendentes" e "Concluídas", datas de conclusão com indicadores visuais de prazo e modo escuro. (⏳ Em Andamento)**
 * **Fase 4: Testes Automatizados:** Escrever testes de unidade e de widget.
 * **Fase 5: Sincronização com a Nuvem (API):** Conectar o app a uma API (como JSONPlaceholder para simulação) para buscar e enviar tarefas, permitindo uma experiência "offline-first".
 
